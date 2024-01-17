@@ -4,6 +4,7 @@
 #include <iostream>
 #include <functional>
 #include <cmath>
+#include <numbers>
 #include <utility>
 
 #include "real.h"
@@ -37,14 +38,15 @@ inline Surface slope() {
 }
 
 inline Surface steps(Real s = 1) {
-    return [=](Point p) -> Real { return s > 0 ? std::floor(s / p.x) : 0; };
+    return [=](Point p) -> Real { return s > 0 ? std::floor(p.x / s) : 0; };
 }
 
 inline Surface checker(Real s = 1) {
     return [=](Point p) -> Real {
         return s > 0 &&
-               (long) std::floor(s / p.x) % 2 == (long) std::floor(s / p.y) % 2
-               ? 1 : 0;
+            std::abs(std::fmod(std::floor(p.x / s), 2)) ==
+            std::abs(std::fmod(std::floor(p.y / s), 2))
+            ? 1 : 0;
     };
 }
 
@@ -62,15 +64,17 @@ inline Surface cos_wave() {
 
 inline Surface rings(Real s = 1) {
     return [=](Point p) -> Real {
-        return s > 0 && (long) std::floor(
-            s / std::sqrt(p.x * p.x + p.y * p.y)) % 2 == 0
+        return s > 0 && std::abs(std::fmod(std::floor(
+            std::sqrt(p.x * p.x + p.y * p.y) / s), 2)) == 0
             ? 1 : 0;
     };
 }
 
 inline Surface ellipse(Real a = 1, Real b = 1) {
     return [=](Point p) -> Real {
-        return a > 0 && b > 0 && p.x / (a * a) + p.y / (b * b) <= 1 ? 1 : 0;
+        return a > 0 && b > 0 &&
+            (p.x * p.x) / (a * a) + (p.y * p.y) / (b * b) <= 1
+            ? 1 : 0;
     };
 }
 
@@ -84,12 +88,12 @@ inline Surface rectangle(Real a = 1, Real b = 1) {
 
 inline Surface stripes(Real s = 1) {
     return [=](Point p) -> Real {
-        return s > 0 && (long) std::ceil(s / p.x) % 2 == 1 ? 1 : 0;
+        return s > 0 && std::abs(std::fmod(std::ceil(p.x / s), 2)) == 1 ? 1 : 0;
     };
 }
 
 inline Surface rotate(const Surface& f, Real deg) {
-    Real rad = deg * std::numbers::pi_v<Real> / 180;
+    Real rad = (-1) * deg * std::numbers::pi_v<Real> / 180;
 
     return [=](Point p) -> Real {
         return std::invoke(f,
@@ -100,13 +104,13 @@ inline Surface rotate(const Surface& f, Real deg) {
 
 inline Surface translate(const Surface& f, Point v) {
     return [=](Point p) -> Real {
-        return std::invoke(f, Point(p.x + v.x, p.y + v.y));
+        return std::invoke(f, Point(p.x - v.x, p.y - v.y));
     };
 }
 
 inline Surface scale(const Surface& f, Point s) {
     return [=](Point p) -> Real {
-        return std::invoke(f, Point(p.x * s.x, p.y * s.y));
+        return std::invoke(f, Point(p.x / s.x, p.y / s.y));
     };
 }
 
