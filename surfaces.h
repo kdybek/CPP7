@@ -18,7 +18,7 @@ public:
 
     Point() = delete;
 
-    Point(Real x, Real y) : x(x), y(y) {}
+    Point(Real _x, Real _y) : x(_x), y(_y) {}
 
     friend std::ostream& operator<<(std::ostream& os, const Point& p) {
         os << p.x << ' ' << p.y;
@@ -43,9 +43,11 @@ inline Surface steps(Real s = 1) {
 
 inline Surface checker(Real s = 1) {
     return [=](Point p) -> Real {
+        // This works only because -x mod 2 = x mod 2 for x in Z,
+        // but would not work in the general case.
         return s > 0 &&
-            std::abs(std::fmod(std::floor(p.x / s), 2)) ==
-            std::abs(std::fmod(std::floor(p.y / s), 2))
+            std::fmod(std::abs(std::floor(p.x / s)), 2) ==
+            std::fmod(std::abs(std::floor(p.y / s)), 2)
             ? 1 : 0;
     };
 }
@@ -64,8 +66,8 @@ inline Surface cos_wave() {
 
 inline Surface rings(Real s = 1) {
     return [=](Point p) -> Real {
-        return s > 0 && std::abs(std::fmod(std::floor(
-            std::sqrt(p.x * p.x + p.y * p.y) / s), 2)) == 0
+        return s > 0 && std::fmod(std::floor(
+            std::sqrt(p.x * p.x + p.y * p.y) / s), 2) == 0
             ? 1 : 0;
     };
 }
@@ -88,17 +90,21 @@ inline Surface rectangle(Real a = 1, Real b = 1) {
 
 inline Surface stripes(Real s = 1) {
     return [=](Point p) -> Real {
-        return s > 0 && std::abs(std::fmod(std::ceil(p.x / s), 2)) == 1 ? 1 : 0;
+        // This works only because -x mod 2 = x mod 2 for x in Z,
+        // but would not work in the general case.
+        return s > 0 &&
+            std::fmod(std::abs(std::ceil(p.x / s)), 2) == 1
+            ? 1 : 0;
     };
 }
 
 inline Surface rotate(const Surface& f, Real deg) {
-    Real rad = (-1) * deg * std::numbers::pi_v<Real> / 180;
+    Real rad = deg * std::numbers::pi_v<Real> / 180;
 
     return [=](Point p) -> Real {
         return std::invoke(f,
-                           Point(p.x * std::cos(rad) - p.y * std::sin(rad),
-                                 p.y * std::cos(rad) + p.x * std::sin(rad)));
+                           Point(p.x * std::cos(rad) + p.y * std::sin(rad),
+                                 p.y * std::cos(rad) - p.x * std::sin(rad)));
     };
 }
 
