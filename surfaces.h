@@ -4,6 +4,7 @@
 #include <iostream>
 #include <functional>
 #include <cmath>
+#include <utility>
 
 #include "real.h"
 
@@ -84,6 +85,72 @@ inline Surface rectangle(Real a = 1, Real b = 1) {
 inline Surface stripes(Real s = 1) {
     return [=](Point p) -> Real {
         return s > 0 && (long) std::ceil(s / p.x) % 2 == 1 ? 1 : 0;
+    };
+}
+
+inline Surface rotate(const Surface& f, Real deg) {
+    Real rad = deg * std::numbers::pi_v<Real> / 180;
+
+    return [=](Point p) -> Real {
+        return std::invoke(f,
+                           Point(p.x * std::cos(rad) - p.y * std::sin(rad),
+                                 p.y * std::cos(rad) + p.x * std::sin(rad)));
+    };
+}
+
+inline Surface translate(const Surface& f, Point v) {
+    return [=](Point p) -> Real {
+        return std::invoke(f, Point(p.x + v.x, p.y + v.y));
+    };
+}
+
+inline Surface scale(const Surface& f, Point s) {
+    return [=](Point p) -> Real {
+        return std::invoke(f, Point(p.x * s.x, p.y * s.y));
+    };
+}
+
+inline Surface invert(const Surface& f) {
+    return [=](Point p) -> Real {
+        return std::invoke(f, Point(p.y, p.x));
+    };
+}
+
+inline Surface flip(const Surface& f) {
+    return [=](Point p) -> Real {
+        return std::invoke(f, Point(p.x * (-1), p.y));
+    };
+}
+
+inline Surface mul(const Surface& f, Real c) {
+    return [=](Point p) -> Real {
+        return std::invoke(f, p) * c;
+    };
+}
+
+inline Surface add(const Surface& f, Real c) {
+    return [=](Point p) -> Real {
+        return std::invoke(f, p) + c;
+    };
+}
+
+template<typename Func, typename... ArgsFunc>
+inline decltype(auto) evaluate(const Func& h, const ArgsFunc&... f) {
+    return [=](auto p) -> decltype(auto) {
+        return std::invoke(h, f(p)...);
+    };
+}
+
+inline decltype(auto) compose() {
+    return [](auto p) -> decltype(auto) {
+        return p;
+    };
+}
+
+template<typename Func, typename... ArgsFunc>
+inline decltype(auto) compose(const Func& first, const ArgsFunc&... f) {
+    return [=](auto p) -> decltype(auto) {
+        return compose(f...)(std::invoke(first, p));
     };
 }
 
